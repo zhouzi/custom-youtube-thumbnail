@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import Color from "color";
+import { type CSSProperties } from "react";
 
 import type * as schema from "@/lib/schema";
 
@@ -20,6 +21,7 @@ export function createScale(theme: schema.Theme, baseFactor: number) {
 
   scale.text = function text(factor: number) {
     return {
+      fontFamily: "Roboto, sans-serif",
       fontSize: `${scale.fontSize(factor)}px`,
       lineHeight: `${scale.lineHeight(factor)}px`,
       fontWeight: 500,
@@ -37,16 +39,34 @@ export function createScale(theme: schema.Theme, baseFactor: number) {
   return scale;
 }
 
+interface YouTubeVideoCardAnimation {
+  container: CSSProperties;
+  thumbnail: CSSProperties;
+  progressBarProgress: CSSProperties;
+  title: CSSProperties;
+  channelTitle: CSSProperties;
+  stats: CSSProperties;
+}
+
 interface YouTubeVideoCardProps {
   videoDetails: schema.VideoDetails;
   theme: schema.Theme;
   scale: ReturnType<typeof createScale>;
+  animation?: YouTubeVideoCardAnimation;
 }
 
 export function YouTubeVideoCard({
   videoDetails,
   theme,
   scale,
+  animation = {
+    container: {},
+    thumbnail: {},
+    progressBarProgress: {},
+    title: {},
+    channelTitle: {},
+    stats: {},
+  },
 }: YouTubeVideoCardProps) {
   return (
     <div
@@ -57,6 +77,7 @@ export function YouTubeVideoCard({
         padding: `${scale.padding(7.5)}px`,
         borderRadius: `${scale.borderRadius(2) + scale.padding(7.5)}px`,
         width: `${scale.width}px`,
+        ...animation.container,
       }}
     >
       <div
@@ -66,9 +87,10 @@ export function YouTubeVideoCard({
           borderRadius: `${scale.borderRadius(2)}px`,
           overflow: "hidden",
           position: "relative",
+          ...animation.thumbnail,
         }}
       >
-        <img src={videoDetails.thumbnail} alt="" />
+        <img src={videoDetails.thumbnail} alt="" style={{ width: "100%" }} />
         {theme.options.showDuration && (
           <div
             style={{
@@ -101,6 +123,7 @@ export function YouTubeVideoCard({
               style={{
                 width: `${theme.options.progressBar}%`,
                 backgroundColor: theme.progressBar.foreground,
+                ...animation.progressBarProgress,
               }}
             />
           </div>
@@ -115,6 +138,7 @@ export function YouTubeVideoCard({
               borderRadius: "100%",
               width: `${scale.fontSize(2.6)}px`,
               height: `${scale.fontSize(2.6)}px`,
+              ...animation.title,
             }}
           />
         )}
@@ -130,6 +154,7 @@ export function YouTubeVideoCard({
               color: theme.card.foreground,
               marginBottom: `${scale.fontSize(0.35)}px`,
               ...scale.text(1),
+              ...animation.title,
             }}
           >
             {videoDetails.title}
@@ -141,6 +166,7 @@ export function YouTubeVideoCard({
                 color: Color(theme.card.foreground).fade(0.4).toString(),
                 ...scale.text(0.875),
                 fontWeight: 400,
+                ...animation.channelTitle,
               }}
             >
               {videoDetails.channel.title}
@@ -153,6 +179,7 @@ export function YouTubeVideoCard({
                 ...scale.text(0.875),
                 fontWeight: 400,
                 marginTop: `${scale.fontSize(0.2)}px`,
+                ...animation.stats,
               }}
             >
               {[

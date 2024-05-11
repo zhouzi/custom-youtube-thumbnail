@@ -2,6 +2,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Player } from "@remotion/player";
 import deepEqual from "deep-equal";
 import deepMerge from "deepmerge";
 import {
@@ -21,14 +22,9 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { DownloadVideoButton } from "@/components/download-video-button";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 // import {
 //   DropdownMenu,
@@ -46,6 +42,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -59,6 +56,7 @@ import { YouTubeVideoCard, createScale } from "@/components/youtube-video-card";
 import * as schema from "@/lib/schema";
 import { type RenderStatus, useRenderPNG } from "@/lib/use-render-png";
 import { useVideoDetails } from "@/lib/use-video-details";
+import { YouTubeVideoCardVideo } from "@/remotion/youtube-video-card-video";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -76,23 +74,6 @@ const formSchema = z.object({
   theme: schema.theme,
 });
 
-const lightTheme = schema.theme.parse({
-  card: schema.card.parse({}),
-  duration: schema.duration.parse({}),
-  progressBar: schema.progressBar.parse({}),
-  options: schema.options.parse({}),
-});
-
-const darkTheme = schema.theme.parse({
-  card: schema.card.parse({
-    foreground: "#f1f1f1",
-    background: "#0f0f0f",
-  }),
-  duration: schema.duration.parse({}),
-  progressBar: schema.progressBar.parse({}),
-  options: schema.options.parse({}),
-});
-
 interface DefaultColorTheme {
   name: string;
   theme: schema.Theme;
@@ -101,11 +82,11 @@ interface DefaultColorTheme {
 const defaultColorThemes = {
   light: {
     name: "Clair",
-    theme: lightTheme,
+    theme: schema.lightTheme,
   },
   dark: {
     name: "Sombre",
-    theme: darkTheme,
+    theme: schema.darkTheme,
   },
 } satisfies Record<string, DefaultColorTheme>;
 
@@ -148,7 +129,7 @@ function findColorThemeIdByTheme(theme: schema.Theme) {
 }
 
 const defaultValues = formSchema.parse({
-  theme: lightTheme,
+  theme: schema.lightTheme,
 });
 
 export default function Home() {
@@ -225,6 +206,16 @@ export default function Home() {
           form.setValue("theme", parsedFormValues.data.theme, {
             shouldDirty: true,
           });
+
+          // TODO: this call seems unnecessary and should be removed, ideally
+          //       but without it the form field is not updated (although local value is updated)
+          form.setValue(
+            "theme.options.exportAs",
+            parsedFormValues.data.theme.options.exportAs,
+            {
+              shouldDirty: true,
+            },
+          );
 
           // Make sure the URL reflects the current parameters,
           // whether they're loaded from localStorage or a legacy source
@@ -323,15 +314,11 @@ export default function Home() {
           // </div>
         }
       </header>
-      <main className="flex flex-col-reverse gap-8 md:flex-row">
-        <div className="flex-1">
-          <Card>
-            <CardHeader>
-              <CardTitle>Paramètres</CardTitle>
-              <CardDescription>Personnalisation de la vignette</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
+      <Form {...form}>
+        <main className="flex flex-col-reverse gap-8 md:flex-row">
+          <div className="flex-1">
+            <Card>
+              <CardContent className="pt-6">
                 <form className="space-y-4">
                   <FormField
                     control={form.control}
@@ -617,59 +604,152 @@ export default function Home() {
                     )}
                   />
                 </form>
-              </Form>
-            </CardContent>
-          </Card>
-        </div>
-        <div
-          className="relative flex flex-col items-center justify-center gap-4 px-4 py-8"
-          style={{
-            // Source: https://sharkcoder.com/images/background
-            background: "#eee",
-            backgroundImage:
-              "linear-gradient(45deg, rgba(0,0,0,.25) 25%, transparent 0, transparent 75%, rgba(0,0,0,.25) 0), linear-gradient(45deg, rgba(0,0,0,.25) 25%, transparent 0, transparent 75%, rgba(0,0,0,.25) 0)",
-            backgroundPosition: "0 0, 25px 25px",
-            backgroundSize: "50px 50px",
-          }}
-        >
-          <div className={roboto.className}>
-            <YouTubeVideoCard
-              videoDetails={videoDetails}
-              theme={validValues.theme}
-              scale={createScale(validValues.theme, 1)}
+              </CardContent>
+            </Card>
+          </div>
+          <div
+            className="relative flex flex-col items-center justify-center gap-4 px-4 py-8"
+            style={{
+              // Source: https://sharkcoder.com/images/background
+              background: "#eee",
+              backgroundImage:
+                "linear-gradient(45deg, rgba(0,0,0,.25) 25%, transparent 0, transparent 75%, rgba(0,0,0,.25) 0), linear-gradient(45deg, rgba(0,0,0,.25) 25%, transparent 0, transparent 75%, rgba(0,0,0,.25) 0)",
+              backgroundPosition: "0 0, 25px 25px",
+              backgroundSize: "50px 50px",
+            }}
+          >
+            <div className={roboto.className}>
+              {validValues.theme.options.exportAs.type === "image" ? (
+                <YouTubeVideoCard
+                  videoDetails={videoDetails}
+                  theme={validValues.theme}
+                  scale={createScale(validValues.theme, 1)}
+                />
+              ) : (
+                <Player
+                  component={YouTubeVideoCardVideo}
+                  inputProps={{
+                    theme: validValues.theme,
+                    videoDetails,
+                  }}
+                  durationInFrames={
+                    validValues.theme.options.exportAs.duration * 30
+                  }
+                  fps={30}
+                  compositionWidth={450 + 16}
+                  compositionHeight={450 + 16}
+                  style={{
+                    width: 450,
+                    height: 450,
+                  }}
+                  autoPlay
+                  controls
+                  showVolumeControls={false}
+                  loop
+                />
+              )}
+            </div>
+            <FormField
+              control={form.control}
+              name="theme.options.exportAs"
+              render={({ field }) => (
+                <>
+                  <FormItem className="space-y-3">
+                    <FormControl>
+                      <RadioGroup
+                        orientation="horizontal"
+                        onValueChange={(value) =>
+                          field.onChange(
+                            value === "image"
+                              ? { type: "image" }
+                              : { type: "video", duration: 4 },
+                          )
+                        }
+                        value={field.value.type}
+                      >
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="image" />
+                          </FormControl>
+                          <FormLabel className="font-normal">Image</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="video" />
+                          </FormControl>
+                          <FormLabel className="font-normal">Vidéo</FormLabel>
+                        </FormItem>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                  {field.value.type === "image" ? (
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={downloadPNG}
+                        disabled={renderStatus !== "idle"}
+                      >
+                        {renderStatus === "downloading" ? (
+                          <>
+                            <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />{" "}
+                            Téléchargement...
+                          </>
+                        ) : (
+                          <>
+                            <Download className="mr-2 size-4" /> Télécharger
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={copyPNG}
+                        disabled={renderStatus !== "idle"}
+                      >
+                        {renderStatus === "copying" ? (
+                          <>
+                            <LoaderCircle className="mr-2 size-4 animate-spin" />{" "}
+                            Copie...
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="mr-2 size-4" /> Copier
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <div className="flex items-center gap-1">
+                        <span className="whitespace-nowrap">
+                          Durée en secondes :
+                        </span>
+                        <Input
+                          type="number"
+                          min={4}
+                          max={2 * 60}
+                          step={1}
+                          className="max-w-[10ch]"
+                          onChange={(event) =>
+                            field.onChange({
+                              type: "video",
+                              duration: Number(event.currentTarget.value),
+                            })
+                          }
+                          value={field.value.duration}
+                        />
+                      </div>
+                      <DownloadVideoButton
+                        theme={validValues.theme}
+                        videoDetails={videoDetails}
+                      />
+                    </div>
+                  )}
+                </>
+              )}
             />
           </div>
-          <div className="flex gap-2">
-            <Button onClick={downloadPNG} disabled={renderStatus !== "idle"}>
-              {renderStatus === "downloading" ? (
-                <>
-                  <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />{" "}
-                  Téléchargement...
-                </>
-              ) : (
-                <>
-                  <Download className="mr-2 size-4" /> Télécharger
-                </>
-              )}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={copyPNG}
-              disabled={renderStatus !== "idle"}
-            >
-              {renderStatus === "copying" ? (
-                <>
-                  <LoaderCircle className="mr-2 size-4 animate-spin" /> Copie...
-                </>
-              ) : (
-                <>
-                  <Copy className="mr-2 size-4" /> Copier
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      </main>
+        </main>
+      </Form>
       <footer className="flex items-center justify-between py-8">
         <p className="text-sm text-muted-foreground">
           D'après une demande de{" "}

@@ -87,6 +87,20 @@ export const options = z.object({
   showChannelThumbnail: z.boolean().default(true),
   showChannelTitle: z.boolean().default(true),
   progressBar: z.number().min(0).max(100).optional(),
+  exportAs: z
+    .union([
+      z.object({ type: z.enum(["image"]) }),
+      z.object({
+        type: z.enum(["video"]),
+        duration: z
+          .number()
+          .min(4)
+          .max(2 * 60)
+          .optional()
+          .default(4),
+      }),
+    ])
+    .default({ type: "image" }),
 });
 
 export const theme = z.object({
@@ -127,3 +141,24 @@ export function getVideoId(href: string) {
 
   return null;
 }
+
+export const defaultVideoDetails = videoDetails.parse({
+  channel: {},
+});
+
+export const lightTheme = theme.parse({
+  card: card.parse({}),
+  duration: duration.parse({}),
+  progressBar: progressBar.parse({}),
+  options: options.parse({}),
+});
+
+export const darkTheme = theme.parse({
+  card: card.parse({
+    foreground: "#f1f1f1",
+    background: "#0f0f0f",
+  }),
+  duration: duration.parse({}),
+  progressBar: progressBar.parse({}),
+  options: options.parse({}),
+});
