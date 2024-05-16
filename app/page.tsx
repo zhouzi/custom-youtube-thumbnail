@@ -56,6 +56,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 // import { UserAvatar } from "@/components/user-avatar";
 import { YouTubeVideoCard, createScale } from "@/components/youtube-video-card";
+import { YouTubeVideoCardHorizontal } from "@/components/youtube-video-card-horizontal";
 import * as schema from "@/lib/schema";
 import { type RenderStatus, useRenderPNG } from "@/lib/use-render-png";
 import { useVideoDetails } from "@/lib/use-video-details";
@@ -239,7 +240,7 @@ export default function Home() {
 
           return;
         }
-      } catch (err) {}
+      } catch (err) { }
     }
   }, [form]);
 
@@ -274,7 +275,7 @@ export default function Home() {
   }, [form]);
 
   return (
-    <div className="m-auto max-w-[900px] px-4 py-6">
+    <div className="m-auto px-4 py-6 max-w-[900px]">
       <header className="flex items-center justify-between py-4">
         <div className="inline-flex items-baseline gap-1">
           <Link
@@ -582,6 +583,35 @@ export default function Home() {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="flex items-center gap-4">
+                    <Label className="flex-1">Layout</Label>
+                    <Select
+                      onValueChange={(value) => {
+                        if (value) {
+                          form.setValue("theme", {
+                            ...form.getValues("theme"),
+                            options: {
+                              ...form.getValues("theme").options,
+                              layout: value,
+                            },
+                          });
+                        }
+                      }}
+                      value={form.getValues("theme").options.layout}
+                    >
+                      <SelectTrigger className="max-w-[160px]">
+                        <SelectValue placeholder="Personnalisé" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={'vertical'}>
+                          Vertical
+                        </SelectItem>
+                        <SelectItem value={'horizontal'}>
+                          Horizontal
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <FormField
                     control={form.control}
                     name="theme.card.foreground"
@@ -633,11 +663,18 @@ export default function Home() {
           }}
         >
           <div className={roboto.className}>
-            <YouTubeVideoCard
-              videoDetails={videoDetails}
-              theme={validValues.theme}
-              scale={createScale(validValues.theme, 1)}
-            />
+            {form.getValues("theme").options.layout === schema.DEFAULT_LAYOUT ?
+              < YouTubeVideoCard
+                videoDetails={videoDetails}
+                theme={validValues.theme}
+                scale={createScale(validValues.theme, 1)}
+              /> :
+              < YouTubeVideoCardHorizontal
+                videoDetails={videoDetails}
+                theme={validValues.theme}
+                scale={createScale(validValues.theme, 1)}
+              />
+            }
           </div>
           <div className="flex gap-2">
             <Button onClick={downloadPNG} disabled={renderStatus !== "idle"}>
